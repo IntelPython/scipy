@@ -1,0 +1,14 @@
+diff --git a/scipy/stats/_rcont/setup.py b/scipy/stats/_rcont/setup.py
+index 515bf616..dd4522e9 100644
+--- a/scipy/stats/_rcont/setup.py
++++ b/scipy/stats/_rcont/setup.py
+@@ -15,7 +15,8 @@ def configuration(parent_package='', top_path=None):
+                       '..', '..', 'random', 'lib'),
+                       join(np.get_include(),
+                       '..', 'lib')],
+-        libraries=['npyrandom', 'npymath']
++        libraries=['npyrandom', 'npymath'],
++        extra_compile_args=['-std=c11', '-pedantic-errors']
+     )
+     return config
+ 

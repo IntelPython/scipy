@@ -1,0 +1,222 @@
+{% set version = "1.10.1" %}
+{% set buildnumber = 0 %}
+{% set major = '.'.join(version.split('.')[0:2]) %}
+{% set numpy = "1.21" %}
+
+package:
+  name: scipy
+  version: {{ version }}
+
+# use 'python_impl' in meta.yaml so it gets picked up by rendering
+# [python_impl == "pypy"]
+
+source:
+  - url: https://github.com/scipy/scipy/archive/refs/tags/v{{ version }}.tar.gz
+    sha256: 8f08e1742c9b09eb58640fa5a56031d6e1844806899e883fbe7447ca86fe8c55
+    patches:
+      - 0002-arff-nodata-test-remove-endian-check.patch  # [s390x]
+      - patches-{{ major }}/intel_lower_odr_opt_level.patch
+      - patches-{{ major }}/intel_lower_isolve_opt_level.patch [ win or osx ]
+      - patches-{{ major }}/intel_lower_fblas_opt_level.patch  [ win or osx ]
+      - patches-{{ major }}/skip_stream_tests.patch
+        # - patches-{{ major }}/intel_use_mkl_fft.patch
+      - patches-{{ major }}/update_readme.patch
+      - patches-{{ major }}/intel_lower_cephes_opt_level.patch
+      - patches-{{ major }}/intel_std11_rcont.patch
+      - patches-{{ major }}/intel_boost_hypergeom_pmf_cdf_NaN_support.patch  # [win]
+  # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/_lib
+  - url: https://github.com/scipy/boost-headers-only/archive/3af99e6d566043072e95bc882d32c9c26f37e0ba.tar.gz
+    sha256: 088c4ddd32e1318069eca8f98610a74e8effd52f0b9509a062ea7e380b610b63
+    folder: scipy/_lib/boost
+  - url: https://github.com/scipy/HiGHS/archive/4a122958a82e67e725d08153e099efe4dad099a2.tar.gz
+    sha256: 8ce0e816d8c7517c95e0e404648eef3aaee0d5b919226b46f592c87a4eca24f4
+    folder: scipy/_lib/highs
+    patches:                                           # [win]
+      - 0003-highs-missing-includes-win.patch  # [win]
+  - url: https://github.com/scipy/unuran/archive/a63d39160e5ecc4402e7ed0e8417f4c3ff9634cb.tar.gz
+    sha256: 2412fdb1d46cc5c677d7fe2b42895f444b2c544040f835083cf814ca93e8c2f5
+    folder: scipy/_lib/unuran
+  # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/sparse/linalg/_propack
+  - url: https://github.com/scipy/PROPACK/archive/cc32f3ba6cf941e4f9f96d96e2fc5762ea0c1014.tar.gz
+    sha256: 15880c83d2d77e748ab8273ed8b61e152bcb43d828dd0938bdf6f82950bc9b25
+    folder: scipy/sparse/linalg/_propack/PROPACK
+
+build:
+  number: {{ buildnumber }}
+  skip: true  # [py<=37 or osx]
+  script_env:
+    - WHEELS_OUTPUT_FOLDER
+  missing_dso_whitelist:  # [linux and s390x]
+    - $RPATH/ld64.so.1    # [linux and s390x] 
+  ignore_run_exports:
+    - numpy
+
+requirements:
+  build:
+    - {{ compiler('c') }}             # [not win]
+    - {{ compiler('cxx') }}           # [not win]
+    # pythran code needs clang-cl on windows
+    - clang                           # [win]
+    - {{ compiler('icc') }}   >=2021.7
+    - patch         # [s390x]
+    - m2-patch      # [win]
+    - pkg-config    # [osx]
+  host:
+    - python
+    - cython 0.29.32
+    - pybind11 2.10.1
+    - pythran 0.12.1
+    - setuptools <60
+    - wheel <0.39.0
+    - numpy {{ numpy }}
+    - pip >=18.0.0
+    - mkl-devel  >=2023.0
+    # pin intel-openmp to the same version as mkl, without this build may fail with
+    # Intel MKL FATAL ERROR: Cannot load libmkl_intel_thread.dylib.
+    # It may be needed to make this pinning explicit in the mkl package
+    - intel-openmp  >=2023.0
+  run:
+    - python
+    # https://github.com/scipy/scipy/blob/v1.10.0/setup.py#L452-L453
+    - numpy >={{ numpy }},<1.27.0
+    - {{ pin_compatible('mkl') }}
+    - {{ pin_compatible('intel-openmp') }}
+    - {{ pin_compatible('fortran_rt') }}
+    # Needed for scipy.datasets
+    - pooch
+
+# Scipy segfault when calling solver PROPACK _svdp at mkl_blas.cdotc (). see: https://github.com/scipy/scipy/issues/15108
+# The use of PROPACK is disabled by default on 1.9.0 : see https://github.com/scipy/scipy/pull/16420
+# However PROPACK tests themselves are not disabled, so we skip test_propack.py tests.
+{% set tests_known_to_crash = "test_svdp or test_examples"%}
+
+{% set tests_to_skip = "_not_a_real_test" %}
+
+# skip a test that fails with MKL + AVX512 (non-AVX512 passes) (See: https://github.com/scipy/scipy/issues/15533)
+{% set tests_to_skip = tests_to_skip + " or test_x0_equals_Mb[bicgstab]" %}
+
+{% set tests_to_skip = tests_to_skip + " or test_fourier_shift_complex01[complex64-6-shape0]" %}
+{% set tests_to_skip = tests_to_skip + " or test_fourier_shift_complex01[complex64-6-shape1]" %}
+{% set tests_to_skip = tests_to_skip + " or test_errstate_all_but_one " %}  # [win]
+{% set tests_to_skip = tests_to_skip + " or test_raises_value_error_negative_entry" %}
+
+# skip failing s390x tests
+# See open issues:
+# - https://github.com/scipy/scipy/issues/17137
+{% set tests_to_skip = tests_to_skip + " or test_milp_timeout_16545" %} # [s390x]
+{% set tests_to_skip = tests_to_skip + " or test_jacobi_int" %} # [s390x] timeout after 1800s
+
+# skip failing osx-64 tests
+# See open issues:
+#   - https://github.com/scipy/scipy/issues/17125
+#   - https://github.com/scipy/scipy/issues/17137 (issue does not mention a platform, but seems to only fail for osx-64)
+{% set tests_to_skip = tests_to_skip + " or test_bad_genei or test_milp_timeout_16545" %}  # [osx and x86_64]
+
+test:
+  imports:
+    - scipy
+    # reference for public API is effectively
+    # https://github.com/scipy/scipy/blob/master/scipy/_lib/tests/test_public_api.py
+    - scipy.cluster
+    - scipy.cluster.hierarchy
+    - scipy.cluster.vq
+    - scipy.constants
+    - scipy.datasets
+    - scipy.fft
+    - scipy.fftpack
+    - scipy.integrate
+    - scipy.interpolate
+    - scipy.io
+    - scipy.io.arff
+    - scipy.io.matlab
+    - scipy.io.wavfile
+    - scipy.linalg
+    - scipy.linalg.blas
+    - scipy.linalg.cython_blas
+    - scipy.linalg.cython_lapack
+    - scipy.linalg.interpolative
+    - scipy.linalg.lapack
+    - scipy.misc
+    - scipy.ndimage
+    - scipy.odr
+    - scipy.optimize
+    - scipy.signal
+    - scipy.signal.windows
+    - scipy.sparse
+    - scipy.sparse.csgraph
+    - scipy.sparse.linalg
+    - scipy.spatial
+    - scipy.spatial.distance
+    - scipy.spatial.transform
+    - scipy.special
+    - scipy.stats
+    - scipy.stats.contingency
+    - scipy.stats.distributions
+    - scipy.stats.mstats
+    - scipy.stats.qmc
+    - scipy.stats.sampling
+  requires:
+    - pytest
+    - pytest-timeout
+    - pytest-xdist
+    - mpmath
+    - threadpoolctl
+    # see comment above
+    - intel-openmp
+  commands:
+    # Attempt to fix some file number limits when testing on osx.
+    - ulimit -n 64000 # [osx]
+
+    # show configuration - required for bug reports to scipy
+    - python -c "import sys, scipy, numpy; print(scipy.__version__, numpy.__version__, sys.version_info)"
+
+    # show SIMD features (some failures occur depending on presence/absence of e.g. AVX512)
+    - python -c "import numpy; numpy.show_config()"
+
+    # the tests ppc64le and aarch64 are currently run through emulation in QEMU;
+    # since this takes much longer, do not run the most heavy-weight tests, i.e. use
+    # label='fast'; same for PyPy due to huge runtime; otherwise set label='full'
+    {% set label = "'full'" %}
+    # for signature of scipy.test see below (note default: label='fast'):
+    # https://github.com/scipy/scipy/blob/v1.7.0/scipy/_lib/_testutils.py#L27
+    
+    # run tests except tests_to_skip
+    {% set param = "verbose=1, label=" + label + ", tests=None" %} # set verbose to 2 for additional logs
+    # {% set extra = "extra_argv=['-k', 'not (" + tests_to_skip + " or " + tests_known_to_crash + ")', '-n', '3', '--timeout=1800', '--durations=50']" %}
+    {% set extra = "extra_argv=['-k', 'not (" + tests_to_skip + " or " + tests_known_to_crash + ")']" %}
+    - python -c "import scipy, sys; sys.exit(not scipy.test({{ param }}, {{ extra }}))"
+    
+    # run tests_to_skip tests, but ignore results (to keep a record of failures)
+    # {% set param_fail = "verbose=2, label=" + label + ", tests=None" %}
+    # {% set extra_crash = "extra_argv=['-k', '(" + tests_known_to_crash + ")', '-n', '3', '--timeout=1800', '--durations=50']" %}
+    # {% set extra_fail = "extra_argv=['-k', '(" + tests_to_skip + ")', '-n', '3', '--timeout=1800', '--durations=50']" %}
+    # - python -c "import scipy, sys; scipy.test({{ param_fail }}, {{ extra_crash }}); sys.exit(0)" # [not s390x]
+    # - python -c "import scipy, sys; scipy.test({{ param_fail }}, {{ extra_fail }}); sys.exit(0)"  # [not s390x]
+
+about:
+  home: https://scipy.org/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Scientific Library for Python
+  description: |
+    SciPy is a Python-based ecosystem of open-source software for mathematics,
+    science, and engineering.
+  doc_url: https://docs.scipy.org/doc/scipy/
+  dev_url: https://github.com/scipy/scipy
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - msarahan
+    - rgommers
+    - ocefpaf
+    - h-vetinari
+  skip-lints:
+    # See the following for full context: 
+    #   - https://github.com/AnacondaRecipes/scipy-feedstock/pull/25
+    #   - The commit message for this line change
+    # tl;dr We have attempted to migrate this package to use `pip --no-deps` but
+    # `mesonpy` has limited support for certain platforms.
+    - uses_setup_py
+

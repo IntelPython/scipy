@@ -1,0 +1,12 @@
+diff --git a/scipy/linalg/setup.py b/scipy/linalg/setup.py
+index d0bfab09..f4f252f4 100644
+--- a/scipy/linalg/setup.py
++++ b/scipy/linalg/setup.py
+@@ -30,6 +30,7 @@ def configuration(parent_package='', top_path=None):
+     config.add_extension('_fblas',
+                          sources=sources,
+                          depends=depends,
++                         extra_f77_compile_args=['-O2'],
+                          extra_info=lapack_opt
+                          )
+ 

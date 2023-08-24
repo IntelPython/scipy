@@ -1,0 +1,18 @@
+diff --git a/scipy/fft/__init__.py b/scipy/fft/__init__.py
+index 03774fa6d..68c560eac 100644
+--- a/scipy/fft/__init__.py
++++ b/scipy/fft/__init__.py
+@@ -109,3 +109,12 @@ __all__ = [
+ from scipy._lib._testutils import PytestTester
+ test = PytestTester(__name__)
+ del PytestTester
++
++sfb = None
++try:
++    import mkl_fft._scipy_fft_backend as sfb
++    set_global_backend(sfb)
++    register_backend("scipy")
++except (ImportError, ModuleNotFoundError, ValueError):
++    pass
++del sfb
+\ No newline at end of file

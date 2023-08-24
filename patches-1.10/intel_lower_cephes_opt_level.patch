@@ -1,0 +1,14 @@
+diff --git a/scipy/special/setup.py b/scipy/special/setup.py
+index 7e8c9608..21ce4c86 100644
+--- a/scipy/special/setup.py
++++ b/scipy/special/setup.py
+@@ -44,7 +44,8 @@ def configuration(parent_package='',top_path=None):
+     config.add_library('sc_cephes',sources=cephes_src,
+                        include_dirs=[curdir] + inc_dirs,
+                        depends=(cephes_hdr + ['*.h']),
+-                       macros=define_macros)
++                       macros=define_macros,
++                       extra_f77_compile_args=['-O1'])
+ 
+     # Fortran/C++ libraries
+     mach_src = [join('mach','*.f')]

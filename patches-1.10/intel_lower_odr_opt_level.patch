@@ -1,0 +1,14 @@
+diff --git a/scipy/odr/setup.py b/scipy/odr/setup.py
+index 84daa5526..80dc8108d 100644
+--- a/scipy/odr/setup.py
++++ b/scipy/odr/setup.py
+@@ -25,7 +25,8 @@ def configuration(parent_package='', top_path=None):
+ 
+     odrpack_src = [join('odrpack', x) for x in libodr_files]
+     config.add_library('odrpack', sources=odrpack_src,
+-                       _pre_build_hook=pre_build_hook)
++                       _pre_build_hook=pre_build_hook,
++                       extra_f77_compile_args=['-O1'])
+ 
+     sources = ['__odrpack.c']
+ 

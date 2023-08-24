@@ -1,0 +1,13 @@
+diff --git a/scipy/stats/_boost/setup.py b/scipy/stats/_boost/setup.py
+index b9862ad6..73be21da 100644
+--- a/scipy/stats/_boost/setup.py
++++ b/scipy/stats/_boost/setup.py
+@@ -45,6 +45,8 @@ def configuration(parent_package='', top_path=None):
+                 'include/func_defs.hpp',
+                 'include/Templated_PyUFunc.hpp',
+             ],
++            extra_compile_args=["-O1"],
++            # extra_f77_compile_args="/fpe:0"
+         )
+         # Add c++11/14 support:
+         ext._pre_build_hook = pre_build_hook

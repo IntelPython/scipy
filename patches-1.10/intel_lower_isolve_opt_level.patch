@@ -1,0 +1,12 @@
+diff --git a/scipy/sparse/linalg/_isolve/setup.py b/scipy/sparse/linalg/_isolve/setup.py
+index dd0b612a..e98ed220 100644
+--- a/scipy/sparse/linalg/_isolve/setup.py
++++ b/scipy/sparse/linalg/_isolve/setup.py
+@@ -38,6 +38,7 @@ def configuration(parent_package='',top_path=None):
+     ext = config.add_extension('_iterative',
+                                sources=sources,
+                                f2py_options=f2py_options,
++                               extra_f77_compile_args=['-O1'],
+                                extra_info=lapack_opt)
+     ext._pre_build_hook = pre_build_hook
+ 

@@ -1,0 +1,26 @@
+diff --git a/setup.py b/setup.py
+index cedb210ad..ca3d56561 100755
+--- a/setup.py
++++ b/setup.py
+@@ -14,6 +14,21 @@ leading scientists and engineers. If you need to manipulate
+ numbers on a computer and display or publish the results,
+ give SciPy a try!
+ 
++To install Intel optimized SciPy Pypi package please use following command:
++
++```
++python -m pip install -i https://pypi.anaconda.org/intel/simple --extra-index-url https://pypi.org/simple scipy
++```
++
++If command above installs SciPy or NumPy package from the Pypi, please use following command to install Intel optimized wheel packages from Anaconda Cloud:
++
++```
++python -m pip install -i https://pypi.anaconda.org/intel/simple --extra-index-url https://pypi.org/simple scipy==<scipy_version> numpy==<numpy_version>
++```
++
++Where `<scipy_version>` should be the latest version from https://anaconda.org/intel/scipy
++Where `<numpy_version>` should be the latest version from https://anaconda.org/intel/numpy
++
+ """
+ 
+ DOCLINES = (__doc__ or '').split("\n")
